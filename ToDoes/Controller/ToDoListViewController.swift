@@ -13,7 +13,7 @@ class ToDoListViewController: UITableViewController {
     //MARK: - Properties
     fileprivate let cellID = "ToDoItemCell"
     
-    let toDoList = ["Learn ios", "Learn android", "Learn material design", "complete one question on the assignment"]
+    var toDoList = ["Learn ios", "Learn android", "Learn material design", "complete one question on the assignment"]
     
     //MARK: - UIViewController methods
     
@@ -21,6 +21,41 @@ class ToDoListViewController: UITableViewController {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
     }
+    
+    
+    // MARK: - IBActions
+    
+    // Add new todo item
+    @IBAction func addNewToDoItemButtonPressed(_ sender: UIBarButtonItem) {
+        
+        // Create a text field
+        var textField = UITextField()
+
+        // Create alert
+        let alert = UIAlertController(title: "Add New ToDoey Item", message: "", preferredStyle: .alert)
+        
+        // Create action
+        let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
+            // Add the new ToDo item in to the list
+            self.toDoList.append(textField.text!) // append the new todo item to the array
+            self.tableView.reloadData() // Reload the tableview with the newly added data
+        }
+        
+        // Add a text field to the alert
+        alert.addTextField { (alertTextField) in
+            // Add a placeholder to the text field
+            alertTextField.placeholder = "Create new item"
+            textField = alertTextField
+        }
+        
+        // Add action to the alert
+        alert.addAction(action)
+        
+        // Present alert
+        present(alert, animated: true, completion: nil)
+        
+    }
+    
     
     //MARK: - TableView Datasource methods
     
