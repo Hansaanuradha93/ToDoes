@@ -12,14 +12,23 @@ class ToDoListViewController: UITableViewController {
 
     //MARK: - Properties
     fileprivate let cellID = "ToDoItemCell"
+    let toDoListArrayKey = "ToDoListArray"
     
+    // Create a array contains todo items
     var toDoList = ["Learn ios", "Learn android", "Learn material design", "complete one question on the assignment"]
+    
+    // Create a UserDefaults
+    let userDefaults = UserDefaults.standard
     
     //MARK: - UIViewController methods
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view, typically from a nib.
+
+        // get the saved userDefault and set it as the value of toDoList
+        if let items = userDefaults.array(forKey: toDoListArrayKey) as? [String] {
+            toDoList = items
+        }
     }
     
     
@@ -38,6 +47,9 @@ class ToDoListViewController: UITableViewController {
         let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
             // Add the new ToDo item in to the list
             self.toDoList.append(textField.text!) // append the new todo item to the array
+            
+            self.userDefaults.set(self.toDoList, forKey: self.toDoListArrayKey) // Save the todo list array in userDefaults
+            
             self.tableView.reloadData() // Reload the tableview with the newly added data
         }
         
