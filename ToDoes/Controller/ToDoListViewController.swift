@@ -15,7 +15,7 @@ class ToDoListViewController: UITableViewController {
     let toDoListArrayKey = "ToDoListArray"
     
     // Create a array contains todo items
-    var toDoList = ["Learn ios", "Learn android", "Learn material design", "complete one question on the assignment"]
+    var toDoList = [Item]()
     
     // Create a UserDefaults
     let userDefaults = UserDefaults.standard
@@ -25,8 +25,21 @@ class ToDoListViewController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
+        let newItem1 = Item()
+        newItem1.itemTitle = "Hello"
+        toDoList.append(newItem1)
+        
+        let newItem2 = Item()
+        newItem2.itemTitle = "Hello"
+        toDoList.append(newItem2)
+        
+        let newItem3 = Item()
+        newItem3.itemTitle = "Hello"
+        toDoList.append(newItem3)
+        
+
         // get the saved userDefault and set it as the value of toDoList
-        if let items = userDefaults.array(forKey: toDoListArrayKey) as? [String] {
+        if let items = userDefaults.array(forKey: toDoListArrayKey) as? [Item] {
             toDoList = items
         }
     }
@@ -46,7 +59,9 @@ class ToDoListViewController: UITableViewController {
         // Create action
         let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
             // Add the new ToDo item in to the list
-            self.toDoList.append(textField.text!) // append the new todo item to the array
+            let newItem = Item()
+            newItem.itemTitle = textField.text!
+            self.toDoList.append(newItem) // append the new todo item to the array
             
             self.userDefaults.set(self.toDoList, forKey: self.toDoListArrayKey) // Save the todo list array in userDefaults
             
@@ -74,12 +89,16 @@ class ToDoListViewController: UITableViewController {
     // Triggered when table view looks for something to display
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
-        let cell = tableView.dequeueReusableCell(withIdentifier: cellID, for: indexPath)
+        let cell = tableView.dequeueReusableCell(withIdentifier: cellID, for: indexPath)  // Create a reusable cell
         
-        let toToItem: String = toDoList[indexPath.row]
+        let item = toDoList[indexPath.row]
+        let toToItem: String = item.itemTitle // Get the todo item text
         
-        cell.textLabel?.text = toToItem
+        cell.textLabel?.text = toToItem // bind the todo item to cell
         
+        // If item status is true, then check it || if item status is false, then un-check it
+        cell.accessoryType = item.itemStatus ? .checkmark : .none
+
         return cell
     }
     
@@ -90,16 +109,14 @@ class ToDoListViewController: UITableViewController {
 
     // Triggers when user selects a row
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        print(toDoList[indexPath.row])  // Print selected item
+        
+        // if item status is true, then set it to false || if item status is false, then set it to true
+        toDoList[indexPath.row].itemStatus = toDoList[indexPath.row].itemStatus ? false : true
+        
+        tableView.reloadData()
         
         tableView.deselectRow(at: indexPath, animated: true) // Create an animation when selecting a row
-        
-        // Check the row has a checkmark or not
-        if ((tableView.cellForRow(at: indexPath)?.accessoryType ) == .checkmark) { // Row has a check mark
-            tableView.cellForRow(at: indexPath)?.accessoryType = .none // Hide the check mark when user diselect the row
-        } else { // Row does not have a check mark
-            tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark // Display a check mark in the row when user selects it
-        }
+
         
     }
     
