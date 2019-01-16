@@ -8,7 +8,8 @@
 
 import Foundation
 
-class Item {
+// "Item" class conforms to Codable (Means "Item" class conforms to both Encodable and Decodable)
+class Item: Codable {
     
     var itemTitle : String = "" // ToDo item text
     var itemStatus : Bool = false// Done or not done

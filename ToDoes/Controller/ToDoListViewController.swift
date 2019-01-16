@@ -11,37 +11,23 @@ import UIKit
 class ToDoListViewController: UITableViewController {
 
     //MARK: - Properties
+    
     fileprivate let cellID = "ToDoItemCell"
     let toDoListArrayKey = "ToDoListArray"
     
+    // Create a data file path
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Item.plist")
     // Create a array contains todo items
     var toDoList = [Item]()
     
-    // Create a UserDefaults
-    let userDefaults = UserDefaults.standard
     
     //MARK: - UIViewController methods
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        loadItems() // Load items from the plist
 
-        let newItem1 = Item()
-        newItem1.itemTitle = "Hello"
-        toDoList.append(newItem1)
-        
-        let newItem2 = Item()
-        newItem2.itemTitle = "Hello"
-        toDoList.append(newItem2)
-        
-        let newItem3 = Item()
-        newItem3.itemTitle = "Hello"
-        toDoList.append(newItem3)
-        
-
-        // get the saved userDefault and set it as the value of toDoList
-        if let items = userDefaults.array(forKey: toDoListArrayKey) as? [Item] {
-            toDoList = items
-        }
     }
     
     
@@ -63,7 +49,7 @@ class ToDoListViewController: UITableViewController {
             newItem.itemTitle = textField.text!
             self.toDoList.append(newItem) // append the new todo item to the array
             
-            self.userDefaults.set(self.toDoList, forKey: self.toDoListArrayKey) // Save the todo list array in userDefaults
+            self.saveItems() // Save items to a plist
             
             self.tableView.reloadData() // Reload the tableview with the newly added data
         }
@@ -86,6 +72,12 @@ class ToDoListViewController: UITableViewController {
     
     //MARK: - TableView Datasource methods
     
+    
+    // Determine how many rows in the section
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return toDoList.count
+    }
+    
     // Triggered when table view looks for something to display
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
@@ -101,17 +93,15 @@ class ToDoListViewController: UITableViewController {
 
         return cell
     }
-    
-    // Determine how many rows in the section
-    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return toDoList.count
-    }
+   
 
     // Triggers when user selects a row
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
         // if item status is true, then set it to false || if item status is false, then set it to true
         toDoList[indexPath.row].itemStatus = toDoList[indexPath.row].itemStatus ? false : true
+        
+        saveItems() // Update the itemStatus in plist and save it
         
         tableView.reloadData()
         
@@ -120,5 +110,35 @@ class ToDoListViewController: UITableViewController {
         
     }
     
+    
+    //MARK: - Supporting methods
+    
+    // Saves items
+    func saveItems() {
+        // Create a proprety list encoder
+        let encoder = PropertyListEncoder()
+        
+        do{
+            let data = try encoder.encode(toDoList) // Encode data
+            try data.write(to: dataFilePath!) // write data to the file path
+        } catch {
+            print("Endoing failed \(error)")
+        }
+    }
+    
+    // Load items from the plist which contains todo list items
+    func loadItems() {
+        if let data = try? Data(contentsOf: dataFilePath!) {
+            
+            // Create decoder
+            let decoder = PropertyListDecoder()
+            do {
+            toDoList = try decoder.decode([Item].self, from: data)  // fill the toDoList array with decoded data
+            } catch {
+                print("Decoding failed \(error)")
+            }
+        }
+    
+    }
 }
 
