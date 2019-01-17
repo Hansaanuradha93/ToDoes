@@ -31,9 +31,10 @@ class ToDoListViewController: UITableViewController {
         
         // Print the file path that has a data
         print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
-        
+                
         // Load items from database
         loadItems()
+        
     }
     
     
@@ -50,7 +51,6 @@ class ToDoListViewController: UITableViewController {
         
         // Create action
         let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
-            
             
             // Add the new ToDo item in to the list
             let newItem = Item(context: self.context)
@@ -81,7 +81,6 @@ class ToDoListViewController: UITableViewController {
     
     //MARK: - TableView Datasource methods
     
-    
     // Determine how many rows in the section
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return toDoList.count
@@ -93,9 +92,9 @@ class ToDoListViewController: UITableViewController {
         let cell = tableView.dequeueReusableCell(withIdentifier: cellID, for: indexPath)  // Create a reusable cell
         
         let item = toDoList[indexPath.row]
-        let toToItem: String = item.itemTitle ?? "" // Get the todo item text
+        let toDoItemText: String = item.itemTitle ?? "" // Get the todo item text
         
-        cell.textLabel?.text = toToItem // bind the todo item to cell
+        cell.textLabel?.text = toDoItemText // bind the todo item to cell
         
         // If item status is true, then check it || if item status is false, then un-check it
         cell.accessoryType = item.itemStatus ? .checkmark : .none
@@ -110,13 +109,13 @@ class ToDoListViewController: UITableViewController {
         // if item status is true, then set it to false || if item status is false, then set it to true
         toDoList[indexPath.row].itemStatus = toDoList[indexPath.row].itemStatus ? false : true
         
-        saveItems() // Update the itemStatus in context and save it
+//        context.delete(toDoList[indexPath.row]) // Remove NSObject from the context
+//        toDoList.remove(at: indexPath.row) // Remove item from the array
         
-        tableView.reloadData()
+        saveItems() // Commit the changes to database
         
         tableView.deselectRow(at: indexPath, animated: true) // Create an animation when selecting a row
 
-        
     }
     
     
@@ -129,18 +128,66 @@ class ToDoListViewController: UITableViewController {
         } catch {
             print("Errors saving context \(error)")
         }
+        tableView.reloadData() // Reload the tableview
     }
     
-    // Load items from the plist which contains todo list items
-    func loadItems() {
+    // Load items from the context which contains todo list items
+    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest()) {
         
-        // Create fetch request
-        let request: NSFetchRequest<Item> = Item.fetchRequest()
+        // Fetch the data using request
         do {
-        toDoList = try context.fetch(request)
+            toDoList = try context.fetch(request)
         } catch {
             print("Error fetching data from context \(error)")
         }
+        
+        // Reload data
+        tableView.reloadData()
+    }
+}
+
+
+//MARK:- UISearchBar methods
+
+extension ToDoListViewController: UISearchBarDelegate {
+    
+    // Triggered when user type something in the search bar
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        
+        if searchBar.text?.count == 0 {
+            // Load all data
+            loadItems()
+            
+            // Do it in the foreground
+            DispatchQueue.main.async {
+                // Close the search bar and go back to the original state
+                searchBar.resignFirstResponder()
+            }
+        } else {
+            // Search items
+            searchItems(with: searchBar)
+        }
+    }
+    
+    // Search items
+    func searchItems(with searchBar : UISearchBar) {
+        // Create fetch request
+        let request: NSFetchRequest<Item> = Item.fetchRequest()
+        
+        // Create a predicate to query data || [cd] means no case and diacritic sansitive
+        let predicate = NSPredicate(format: "itemTitle CONTAINS[cd] %@", searchBar.text!)
+        
+        // add the predicate to the request
+        request.predicate = predicate
+        
+        // Sort data in ascending order
+        let sortDescriptor = NSSortDescriptor(key: "itemTitle", ascending: true)
+        
+        // Add the sortDiscriptor to the request
+        request.sortDescriptors = [sortDescriptor]
+        
+        // Load queried data
+        loadItems(with: request)
     }
 }
 
