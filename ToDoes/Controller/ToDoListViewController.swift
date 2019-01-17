@@ -22,6 +22,14 @@ class ToDoListViewController: UITableViewController {
     // Create a array contains todo items
     var toDoList = [Item]()
     
+    // Create selected category
+    var selectedCategory: Category? {
+        didSet {
+            // Load items from database
+            loadItems()
+        }
+    }
+    
     
     
     //MARK: - UIViewController methods
@@ -31,10 +39,7 @@ class ToDoListViewController: UITableViewController {
         
         // Print the file path that has a data
         print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
-                
-        // Load items from database
-        loadItems()
-        
+     
     }
     
     
@@ -52,15 +57,18 @@ class ToDoListViewController: UITableViewController {
         // Create action
         let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
             
-            // Add the new ToDo item in to the list
+            // Add the new ToDo item
             let newItem = Item(context: self.context)
             newItem.itemTitle = textField.text!
             newItem.itemStatus = false
-            self.toDoList.append(newItem) // append the new todo item to the array
+            newItem.parentCategory = self.selectedCategory
             
-            self.saveItems() // Save items to a plist
+            // append the new todo item to the array
+            self.toDoList.append(newItem)
             
-            self.tableView.reloadData() // Reload the tableview with the newly added data
+            // Save items to the database
+            self.saveItems()
+            
         }
         
         // Add a text field to the alert
@@ -79,7 +87,7 @@ class ToDoListViewController: UITableViewController {
     }
     
     
-    //MARK: - TableView Datasource methods
+    //MARK: - TabelView Datasource methods
     
     // Determine how many rows in the section
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -89,20 +97,25 @@ class ToDoListViewController: UITableViewController {
     // Triggered when table view looks for something to display
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
-        let cell = tableView.dequeueReusableCell(withIdentifier: cellID, for: indexPath)  // Create a reusable cell
+        // Create a reusable cell
+        let cell = tableView.dequeueReusableCell(withIdentifier: cellID, for: indexPath)
         
         let item = toDoList[indexPath.row]
-        let toDoItemText: String = item.itemTitle ?? "" // Get the todo item text
+        // Get the todo item text
+        let toDoItemText: String = item.itemTitle ?? ""
         
-        cell.textLabel?.text = toDoItemText // bind the todo item to cell
+        // bind the todo item to cell
+        cell.textLabel?.text = toDoItemText
         
         // If item status is true, then check it || if item status is false, then un-check it
         cell.accessoryType = item.itemStatus ? .checkmark : .none
 
         return cell
     }
-   
 
+    
+    //MARK: - TabelView Delegate methods
+   
     // Triggers when user selects a row
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
@@ -119,7 +132,7 @@ class ToDoListViewController: UITableViewController {
     }
     
     
-    //MARK: - Supporting methods
+    //MARK: - Data Manipulation methods
     
     // Saves items to persistent contriner from the context
     func saveItems() {
@@ -132,16 +145,28 @@ class ToDoListViewController: UITableViewController {
     }
     
     // Load items from the context which contains todo list items
-    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest()) {
+    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest(), predicate: NSPredicate? = nil) {
         
-        // Fetch the data using request
+        // Create predicate to query data - Select todo iems only related to selected category
+        let categoryPredicate = NSPredicate(format: "parentCategory.categoryName MATCHES %@", selectedCategory!.categoryName!)
+        
+        // If predicate is not nil
+        if let addtionalPredicate = predicate {
+            // Set the predicate to have multiple predicates
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [addtionalPredicate, categoryPredicate])
+        } else {
+            // Set the predicate to have only one predicate
+            request.predicate = categoryPredicate
+        }
+        
+        // Fetch the items using request
         do {
             toDoList = try context.fetch(request)
         } catch {
-            print("Error fetching data from context \(error)")
+            print("Error fetching items from context \(error)")
         }
         
-        // Reload data
+        // Reload da tabel view data
         tableView.reloadData()
     }
 }
@@ -149,7 +174,7 @@ class ToDoListViewController: UITableViewController {
 
 //MARK:- UISearchBar methods
 
-extension ToDoListViewController: UISearchBarDelegate {
+extension ToDoListViewController : UISearchBarDelegate {
     
     // Triggered when user type something in the search bar
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
@@ -177,17 +202,14 @@ extension ToDoListViewController: UISearchBarDelegate {
         // Create a predicate to query data || [cd] means no case and diacritic sansitive
         let predicate = NSPredicate(format: "itemTitle CONTAINS[cd] %@", searchBar.text!)
         
-        // add the predicate to the request
-        request.predicate = predicate
-        
-        // Sort data in ascending order
+        // Sort items in ascending order
         let sortDescriptor = NSSortDescriptor(key: "itemTitle", ascending: true)
         
         // Add the sortDiscriptor to the request
         request.sortDescriptors = [sortDescriptor]
         
         // Load queried data
-        loadItems(with: request)
+        loadItems(with: request, predicate: predicate)
     }
 }
 
