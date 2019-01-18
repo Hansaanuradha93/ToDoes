@@ -64,6 +64,7 @@ class ToDoListViewController: UITableViewController {
                         // Add the new ToDo item
                         let newItem = Item()
                         newItem.itemTitle = textField.text!
+                        newItem.dateCreated = Date()
                         
                         // Append the new item to the current category or selected category
                         currentCategory.items.append(newItem)
@@ -76,8 +77,6 @@ class ToDoListViewController: UITableViewController {
                 }
 
             }
-            
-
             
         }
         
@@ -134,13 +133,23 @@ class ToDoListViewController: UITableViewController {
     // Triggers when user selects a row
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
-        // if item status is true, then set it to false || if item status is false, then set it to true
-//        toDoList?[indexPath.row].itemStatus = toDoList[indexPath.row].itemStatus ? false : true
         
-//        context.delete(toDoList[indexPath.row]) // Remove NSObject from the context
-//        toDoList.remove(at: indexPath.row) // Remove item from the array
+        if let item = toDoList?[indexPath.row] {
+            
+            do {
+                
+                try realm.write {
+                    // Update itemStatus and save it in the Real database
+                    item.itemStatus = !item.itemStatus
+                }
+                
+            } catch {
+                print("Error updating Realm database \(error)")
+            }
+        }
         
-//        saveItems() // Commit the changes to database
+        // Reload tebleview data
+        tableView.reloadData()
         
         tableView.deselectRow(at: indexPath, animated: true) // Create an animation when selecting a row
 
@@ -151,14 +160,6 @@ class ToDoListViewController: UITableViewController {
     
     // Saves items to persistent contriner from the context
     func saveItems(item : Item) {
-        do{
-            // Commit changes to Realm database
-            try realm.write {
-                realm.add(item)
-            }
-        } catch {
-            print("Errors saving context \(error)")
-        }
         tableView.reloadData() // Reload the tableview
     }
     
@@ -173,16 +174,17 @@ class ToDoListViewController: UITableViewController {
 }
 
 
+
 //MARK:- UISearchBar methods
 
 extension ToDoListViewController : UISearchBarDelegate {
-    
+
     // Triggered when user type something in the search bar
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
         
         if searchBar.text?.count == 0 {
-            // Load all data
-//            loadItems()
+            // Load all items
+            loadItems()
             
             // Do it in the foreground
             DispatchQueue.main.async {
@@ -191,26 +193,21 @@ extension ToDoListViewController : UISearchBarDelegate {
             }
         } else {
             // Search items
-//            searchItems(with: searchBar)
+            searchItems(with: searchBar)
         }
     }
     
     // Search items
-//    func searchItems(with searchBar : UISearchBar) {
-//        // Create fetch request
-//        let request: NSFetchRequest<Item> = Item.fetchRequest()
-//
-//        // Create a predicate to query data || [cd] means no case and diacritic sansitive
-//        let predicate = NSPredicate(format: "itemTitle CONTAINS[cd] %@", searchBar.text!)
-//
-//        // Sort items in ascending order
-//        let sortDescriptor = NSSortDescriptor(key: "itemTitle", ascending: true)
-//
-//        // Add the sortDiscriptor to the request
-//        request.sortDescriptors = [sortDescriptor]
-//
-//        // Load queried data
-//        loadItems(with: request, predicate: predicate)
-//    }
+    func searchItems(with searchBar : UISearchBar) {
+        
+        // Create predicate to query data
+        let predicate = NSPredicate(format: "itemTitle CONTAINS[cd] %@", searchBar.text!)
+        
+        // Query and sort data
+        toDoList = toDoList?.filter(predicate).sorted(byKeyPath: "dateCreated", ascending: true)
+        
+        // Reload tableview data
+        tableView.reloadData()
+    }
 }
 

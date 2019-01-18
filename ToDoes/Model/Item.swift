@@ -14,6 +14,7 @@ class Item : Object {
     // Attributes
     @objc dynamic var itemTitle : String = ""
     @objc dynamic var itemStatus : Bool = false
+    @objc dynamic var dateCreated : Date?
     
     // Reflects inverse or backwards relationship between Item and Category (One to One)
     var parentCategory = LinkingObjects(fromType: Category.self, property: "items")
