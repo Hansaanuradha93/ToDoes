@@ -7,20 +7,21 @@
 //
 
 import UIKit
-import CoreData
+import RealmSwift
 
 class ToDoListViewController: UITableViewController {
 
     //MARK: - Properties
     
+    // Create Realm instance
+    let realm = try! Realm()
+    
     fileprivate let cellID = "ToDoItemCell"
     let toDoListArrayKey = "ToDoListArray"
     
-    // Create context
-    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     
-    // Create a array contains todo items
-    var toDoList = [Item]()
+    // Create a Results that contains Catorgory type objects || Results is an auto updating container in Realm so everytime category is added to Realm database, it will automatically update the Results
+    var toDoList : Results<Item>?
     
     // Create selected category
     var selectedCategory: Category? {
@@ -37,8 +38,6 @@ class ToDoListViewController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        // Print the file path that has a data
-        print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
      
     }
     
@@ -57,17 +56,28 @@ class ToDoListViewController: UITableViewController {
         // Create action
         let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
             
-            // Add the new ToDo item
-            let newItem = Item(context: self.context)
-            newItem.itemTitle = textField.text!
-            newItem.itemStatus = false
-            newItem.parentCategory = self.selectedCategory
+            if let currentCategory = self.selectedCategory {
+                
+                do {
+                    // Commit changes to the Realm database
+                    try self.realm.write {
+                        // Add the new ToDo item
+                        let newItem = Item()
+                        newItem.itemTitle = textField.text!
+                        
+                        // Append the new item to the current category or selected category
+                        currentCategory.items.append(newItem)
+                        
+                        // Reload tableview data
+                        self.tableView.reloadData()
+                    }
+                } catch {
+                    print("Error saving items to Realm database \(error)")
+                }
+
+            }
             
-            // append the new todo item to the array
-            self.toDoList.append(newItem)
-            
-            // Save items to the database
-            self.saveItems()
+
             
         }
         
@@ -91,7 +101,7 @@ class ToDoListViewController: UITableViewController {
     
     // Determine how many rows in the section
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return toDoList.count
+        return toDoList?.count ?? 1
     }
     
     // Triggered when table view looks for something to display
@@ -100,15 +110,20 @@ class ToDoListViewController: UITableViewController {
         // Create a reusable cell
         let cell = tableView.dequeueReusableCell(withIdentifier: cellID, for: indexPath)
         
-        let item = toDoList[indexPath.row]
-        // Get the todo item text
-        let toDoItemText: String = item.itemTitle ?? ""
-        
-        // bind the todo item to cell
-        cell.textLabel?.text = toDoItemText
-        
-        // If item status is true, then check it || if item status is false, then un-check it
-        cell.accessoryType = item.itemStatus ? .checkmark : .none
+        if let item = toDoList?[indexPath.row] {
+           
+            // Get the todo item text
+            let toDoItemText: String = item.itemTitle
+            
+            // bind the todo item to cell
+            cell.textLabel?.text = toDoItemText
+            
+            // If item status is true, then check it || if item status is false, then un-check it
+            cell.accessoryType = item.itemStatus ? .checkmark : .none
+        } else {
+            cell.textLabel?.text = "No Items Added"
+        }
+
 
         return cell
     }
@@ -120,12 +135,12 @@ class ToDoListViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
         // if item status is true, then set it to false || if item status is false, then set it to true
-        toDoList[indexPath.row].itemStatus = toDoList[indexPath.row].itemStatus ? false : true
+//        toDoList?[indexPath.row].itemStatus = toDoList[indexPath.row].itemStatus ? false : true
         
 //        context.delete(toDoList[indexPath.row]) // Remove NSObject from the context
 //        toDoList.remove(at: indexPath.row) // Remove item from the array
         
-        saveItems() // Commit the changes to database
+//        saveItems() // Commit the changes to database
         
         tableView.deselectRow(at: indexPath, animated: true) // Create an animation when selecting a row
 
@@ -135,9 +150,12 @@ class ToDoListViewController: UITableViewController {
     //MARK: - Data Manipulation methods
     
     // Saves items to persistent contriner from the context
-    func saveItems() {
+    func saveItems(item : Item) {
         do{
-            try context.save()
+            // Commit changes to Realm database
+            try realm.write {
+                realm.add(item)
+            }
         } catch {
             print("Errors saving context \(error)")
         }
@@ -145,26 +163,9 @@ class ToDoListViewController: UITableViewController {
     }
     
     // Load items from the context which contains todo list items
-    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest(), predicate: NSPredicate? = nil) {
+    func loadItems() {
         
-        // Create predicate to query data - Select todo iems only related to selected category
-        let categoryPredicate = NSPredicate(format: "parentCategory.categoryName MATCHES %@", selectedCategory!.categoryName!)
-        
-        // If predicate is not nil
-        if let addtionalPredicate = predicate {
-            // Set the predicate to have multiple predicates
-            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [addtionalPredicate, categoryPredicate])
-        } else {
-            // Set the predicate to have only one predicate
-            request.predicate = categoryPredicate
-        }
-        
-        // Fetch the items using request
-        do {
-            toDoList = try context.fetch(request)
-        } catch {
-            print("Error fetching items from context \(error)")
-        }
+        toDoList = selectedCategory?.items.sorted(byKeyPath: "itemTitle", ascending: true)
         
         // Reload da tabel view data
         tableView.reloadData()
@@ -181,7 +182,7 @@ extension ToDoListViewController : UISearchBarDelegate {
         
         if searchBar.text?.count == 0 {
             // Load all data
-            loadItems()
+//            loadItems()
             
             // Do it in the foreground
             DispatchQueue.main.async {
@@ -190,26 +191,26 @@ extension ToDoListViewController : UISearchBarDelegate {
             }
         } else {
             // Search items
-            searchItems(with: searchBar)
+//            searchItems(with: searchBar)
         }
     }
     
     // Search items
-    func searchItems(with searchBar : UISearchBar) {
-        // Create fetch request
-        let request: NSFetchRequest<Item> = Item.fetchRequest()
-        
-        // Create a predicate to query data || [cd] means no case and diacritic sansitive
-        let predicate = NSPredicate(format: "itemTitle CONTAINS[cd] %@", searchBar.text!)
-        
-        // Sort items in ascending order
-        let sortDescriptor = NSSortDescriptor(key: "itemTitle", ascending: true)
-        
-        // Add the sortDiscriptor to the request
-        request.sortDescriptors = [sortDescriptor]
-        
-        // Load queried data
-        loadItems(with: request, predicate: predicate)
-    }
+//    func searchItems(with searchBar : UISearchBar) {
+//        // Create fetch request
+//        let request: NSFetchRequest<Item> = Item.fetchRequest()
+//
+//        // Create a predicate to query data || [cd] means no case and diacritic sansitive
+//        let predicate = NSPredicate(format: "itemTitle CONTAINS[cd] %@", searchBar.text!)
+//
+//        // Sort items in ascending order
+//        let sortDescriptor = NSSortDescriptor(key: "itemTitle", ascending: true)
+//
+//        // Add the sortDiscriptor to the request
+//        request.sortDescriptors = [sortDescriptor]
+//
+//        // Load queried data
+//        loadItems(with: request, predicate: predicate)
+//    }
 }
 

@@ -7,19 +7,23 @@
 //
 
 import UIKit
-import CoreData
+import RealmSwift
 
 class CategoryViewController: UITableViewController {
 
     // MARK: - Properties
     
+    // Create Realm instance
+    let realm = try! Realm()
+    
     // Reusable cell id
     fileprivate let cellID = "CategoryCell"
     fileprivate let segueID = "goToItems"
     
-    var categoryList = [Category]()
+    // Create a Results that contains Catorgory type objects || Results is an auto updating container in Realm so everytime category is added to Realm database, it will automatically update the Results
+    var categoryList : Results<Category>?
     // Create context
-    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+//    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     
     
     // MARK: - UIViewController methods
@@ -48,12 +52,11 @@ class CategoryViewController: UITableViewController {
         let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
             
             // Add a new category
-            let newCategory = Category(context: self.context)
+            let newCategory = Category()
             newCategory.categoryName = textField.text!
-            self.categoryList.append(newCategory)
             
             // Save the items to the database
-            self.saveItems()
+            self.save(category: newCategory)
             
         }
         
@@ -76,7 +79,7 @@ class CategoryViewController: UITableViewController {
     
     // Determine how many rows in the section
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return categoryList.count
+        return categoryList?.count ?? 1
     }
     
     // Triggered when table view looks for something to display
@@ -85,9 +88,7 @@ class CategoryViewController: UITableViewController {
         // Create a reusable cell
         let cell = tableView.dequeueReusableCell(withIdentifier: cellID, for: indexPath)
         
-        let category = categoryList[indexPath.row]
-        
-        cell.textLabel?.text = category.categoryName
+        cell.textLabel?.text = categoryList?[indexPath.row].categoryName ?? "No Categories Added"
         
         return cell
     }
@@ -108,7 +109,7 @@ class CategoryViewController: UITableViewController {
             
             if let indexPath = tableView.indexPathForSelectedRow {
                 // Set the selectedCategory in CategoryViewController
-                destinationViewController.selectedCategory = categoryList[indexPath.row]
+                destinationViewController.selectedCategory = categoryList?[indexPath.row]
                 
             }
         }
@@ -118,9 +119,12 @@ class CategoryViewController: UITableViewController {
     // MARK: - Data Manipulation methods
     
     // Saves items to persistent contriner from the context
-    func saveItems() {
+    func save(category : Category) {
         do{
-            try context.save()
+            // Commit changes to Realm database
+            try realm.write {
+                realm.add(category)
+            }
         } catch {
             print("Errors saving context \(error)")
         }
@@ -128,16 +132,12 @@ class CategoryViewController: UITableViewController {
     }
     
     // load categories from the database
-    func loadCategories(with request: NSFetchRequest<Category> = Category.fetchRequest()) {
+    func loadCategories() {
         
-        // Fetch the categories using request
-        do {
-            categoryList = try context.fetch(request)
-        } catch {
-            print("Error fetching categories from context")
-        }
+        // Load all the categories from Realm database
+        categoryList = realm.objects(Category.self)
         
-        // Reload da tabel view data
+        // Reload tableview data
         tableView.reloadData()
     }
 
@@ -169,23 +169,23 @@ extension CategoryViewController : UISearchBarDelegate {
     
     func searchCategories(with searchBar : UISearchBar) {
         
-        // Create a fetch request
-        let request: NSFetchRequest<Category> = Category.fetchRequest()
-        
-        // Create a predicate to query data || [cd] meand no case and diacritic sensitive
-        let predicate = NSPredicate(format: "categoryName CONTAINS[cd] %@", searchBar.text!)
-        
-        // Add the predicate to the request
-        request.predicate = predicate
-        
-        // Sort categories in ascending order
-        let sortDescriptor = NSSortDescriptor(key: "categoryName", ascending: true)
-        
-        // Add the sortDiscriptor to the request
-        request.sortDescriptors = [sortDescriptor]
-        
-        // Load queried categories
-        loadCategories(with: request)
+//        // Create a fetch request
+//        let request: NSFetchRequest<Category> = Category.fetchRequest()
+//        
+//        // Create a predicate to query data || [cd] meand no case and diacritic sensitive
+//        let predicate = NSPredicate(format: "categoryName CONTAINS[cd] %@", searchBar.text!)
+//        
+//        // Add the predicate to the request
+//        request.predicate = predicate
+//        
+//        // Sort categories in ascending order
+//        let sortDescriptor = NSSortDescriptor(key: "categoryName", ascending: true)
+//        
+//        // Add the sortDiscriptor to the request
+//        request.sortDescriptors = [sortDescriptor]
+//        
+//        // Load queried categories
+//        loadCategories(with: request)
         
     }
     

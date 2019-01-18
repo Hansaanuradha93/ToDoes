@@ -8,6 +8,7 @@
 
 import UIKit
 import CoreData
+import RealmSwift
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -17,6 +18,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         print("Did finished launch")
+        
+//        let codeDataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+//        let realmFilePath = Realm.Configuration.defaultConfiguration.fileURL
+//        print(realmFilePath ?? "")
         return true
     }
 
