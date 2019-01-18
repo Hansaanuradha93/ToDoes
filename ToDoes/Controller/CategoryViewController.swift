@@ -54,6 +54,7 @@ class CategoryViewController: UITableViewController {
             // Add a new category
             let newCategory = Category()
             newCategory.categoryName = textField.text!
+            newCategory.dateCreated = Date()
             
             // Save the items to the database
             self.save(category: newCategory)
@@ -169,23 +170,14 @@ extension CategoryViewController : UISearchBarDelegate {
     
     func searchCategories(with searchBar : UISearchBar) {
         
-//        // Create a fetch request
-//        let request: NSFetchRequest<Category> = Category.fetchRequest()
-//        
-//        // Create a predicate to query data || [cd] meand no case and diacritic sensitive
-//        let predicate = NSPredicate(format: "categoryName CONTAINS[cd] %@", searchBar.text!)
-//        
-//        // Add the predicate to the request
-//        request.predicate = predicate
-//        
-//        // Sort categories in ascending order
-//        let sortDescriptor = NSSortDescriptor(key: "categoryName", ascending: true)
-//        
-//        // Add the sortDiscriptor to the request
-//        request.sortDescriptors = [sortDescriptor]
-//        
-//        // Load queried categories
-//        loadCategories(with: request)
+        // Create predicate to query data
+        let predicate = NSPredicate(format: "categoryName CONTAINS[cd] %@", searchBar.text!)
+        
+        // Query data and sort them in dateCreated
+        categoryList = categoryList?.filter(predicate).sorted(byKeyPath: "dateCreated", ascending: true)
+        
+        // Reload tableview data
+        tableView.reloadData()
         
     }
     
