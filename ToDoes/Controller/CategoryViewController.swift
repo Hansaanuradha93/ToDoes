@@ -8,6 +8,7 @@
 
 import UIKit
 import RealmSwift
+import ChameleonFramework
 
 class CategoryViewController: SwipeTableViewController {
 
@@ -55,6 +56,7 @@ class CategoryViewController: SwipeTableViewController {
             let newCategory = Category()
             newCategory.categoryName = textField.text!
             newCategory.dateCreated = Date()
+            newCategory.categoryColor = UIColor.randomFlat.hexValue()
             
             // Save the items to the database
             self.save(category: newCategory)
@@ -89,7 +91,19 @@ class CategoryViewController: SwipeTableViewController {
         // Create a reusable cell || This time we use the cell created in the super class SwipeTableViewController
         let cell = super.tableView(tableView, cellForRowAt: indexPath)
         
+        // Add a label taxt for the cell
         cell.textLabel?.text = categoryList?[indexPath.row].categoryName ?? "No Categories Added"
+        
+        // Generate backdround color
+        let cellBackgroundColor = UIColor(hexString: categoryList?[indexPath.row].categoryColor ?? "#58B1F8")
+        // Generate text color matching to background color
+        let cellTextColor = UIColor(contrastingBlackOrWhiteColorOn:cellBackgroundColor!, isFlat:true)
+        
+        // Add a random flat color to the cell
+        cell.backgroundColor = UIColor(hexString: categoryList?[indexPath.row].categoryColor ?? "#58B1F8")
+        
+        // Set the cell text color
+        cell.textLabel?.textColor = cellTextColor
         
         return cell
     }

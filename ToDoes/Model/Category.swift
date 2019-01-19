@@ -14,6 +14,7 @@ class Category : Object {
     // Attributes
     @objc dynamic var categoryName : String = ""
     @objc dynamic var dateCreated : Date?
+    @objc dynamic var categoryColor : String = ""
     
     // Reflects forward relationship between Category and Item (One to Many)
     let items = List<Item>()

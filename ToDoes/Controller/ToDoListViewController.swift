@@ -32,15 +32,60 @@ class ToDoListViewController: SwipeTableViewController {
     }
     
     
+    // MARK: - IBOutlets
+    
+    @IBOutlet weak var searchBar: UISearchBar!
+    
     
     //MARK: - UIViewController methods
     
+    // Triggers when view did load
     override func viewDidLoad() {
         super.viewDidLoad()
         
      
     }
     
+    // Trggers when view will just about to appear || after viewDidLoad
+    override func viewWillAppear(_ animated: Bool) {
+        
+        guard let categoryHexColor = selectedCategory?.categoryColor else { fatalError() }
+            
+        // Update navbar
+        updateNavBar(withHexCode: categoryHexColor)
+            
+        // Set navigation bar title to selected catagory name
+        title = selectedCategory?.categoryName
+    }
+    
+    // Trggers when view will just about to disappear || after viewWillAppear
+    override func viewWillDisappear(_ animated: Bool) {
+        
+        // Reset navbar with original color
+        updateNavBar(withHexCode: "#58B1F8")
+        
+    }
+    
+    // MARK: - NabBar Setup
+
+    func updateNavBar(withHexCode colorHexCode : String) {
+        // If navBar does not exsits, then fatal error will be thrown
+        guard let navBar = navigationController?.navigationBar else { fatalError("Navigation controller does not exist" ) }
+        
+        guard let navBarColor = UIColor(hexString: colorHexCode) else { fatalError() }
+        
+        // Set Navigation bar color
+        navBar.barTintColor = navBarColor
+        
+        // tint color property reffers to all the navbar items
+        navBar.tintColor = UIColor(contrastingBlackOrWhiteColorOn: navBarColor, isFlat:true)
+        
+        // Set large title text attributes of navbar
+        navBar.largeTitleTextAttributes = [NSAttributedString.Key.foregroundColor : UIColor(contrastingBlackOrWhiteColorOn: navBarColor, isFlat:true)]
+        
+        // Set the search bar tint color
+        searchBar.barTintColor = navBarColor
+    }
     
     // MARK: - IBActions
     
@@ -116,6 +161,20 @@ class ToDoListViewController: SwipeTableViewController {
             
             // If item status is true, then check it || if item status is false, then un-check it
             cell.accessoryType = item.itemStatus ? .checkmark : .none
+            
+            
+            // Generate cell backdound color by darkening
+            let cellBackgroundColor = UIColor(hexString: selectedCategory?.categoryColor ?? "#58B1F8")?.darken(byPercentage: CGFloat(indexPath.row) / CGFloat(toDoList!.count))
+            
+            // Generate text color matching to background color
+            let textColor = UIColor(contrastingBlackOrWhiteColorOn:cellBackgroundColor!, isFlat:true)
+            
+            // Set cell background color
+            cell.backgroundColor = cellBackgroundColor
+            // Set cell text color
+            cell.textLabel?.textColor = textColor
+            
+            
         } else {
             cell.textLabel?.text = "No Items Added"
         }
