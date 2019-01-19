@@ -9,7 +9,7 @@
 import UIKit
 import RealmSwift
 
-class ToDoListViewController: UITableViewController {
+class ToDoListViewController: SwipeTableViewController {
 
     //MARK: - Properties
     
@@ -106,16 +106,13 @@ class ToDoListViewController: UITableViewController {
     // Triggered when table view looks for something to display
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
-        // Create a reusable cell
-        let cell = tableView.dequeueReusableCell(withIdentifier: cellID, for: indexPath)
-        
+        // Create a reusable cell || This time we use the cell created in the super class SwipeTableViewController
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
+
         if let item = toDoList?[indexPath.row] {
-           
-            // Get the todo item text
-            let toDoItemText: String = item.itemTitle
             
             // bind the todo item to cell
-            cell.textLabel?.text = toDoItemText
+            cell.textLabel?.text = item.itemTitle
             
             // If item status is true, then check it || if item status is false, then un-check it
             cell.accessoryType = item.itemStatus ? .checkmark : .none
@@ -166,11 +163,30 @@ class ToDoListViewController: UITableViewController {
     // Load items from the context which contains todo list items
     func loadItems() {
         
-        toDoList = selectedCategory?.items.sorted(byKeyPath: "itemTitle", ascending: true)
+        toDoList = selectedCategory?.items.sorted(byKeyPath: "dateCreated", ascending: true)
         
         // Reload da tabel view data
         tableView.reloadData()
     }
+    
+    
+    // MARK: - Dalete Data From Swipe
+    
+    // Delete todo items in database
+    override func updateDataModel(at indexPath: IndexPath) {
+        if let itemFromDeletion = self.selectedCategory?.items[indexPath.row] {
+            do {
+                try self.realm.write {
+                    self.realm.delete(itemFromDeletion)
+                }
+            } catch {
+                print("Error deleting category \(error)")
+            }
+            
+        }
+        
+    }
+    
 }
 
 

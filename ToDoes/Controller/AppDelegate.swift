@@ -19,8 +19,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         print("Did finished launch")
         
 //        let codeDataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
-//        let realmFilePath = Realm.Configuration.defaultConfiguration.fileURL
-//        print(realmFilePath ?? "")
+        let realmFilePath = Realm.Configuration.defaultConfiguration.fileURL
+        print(realmFilePath ?? "")
         return true
     }
 
